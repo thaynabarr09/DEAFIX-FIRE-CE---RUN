@@ -1,0 +1,60 @@
+name: Gerar APK RUNDEAFIX FIRE CE RUN
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Compilar RUNDEAFIX FIRE CE RUN
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android SDK 35
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Encontrar ZIP corrigido
+        run: |
+          ZIP=$(find . -maxdepth 1 -name "rundeafix-fire-ce-run-android-fixed-v1.0.1.zip" -print -quit)
+          if [ -z "$ZIP" ]; then
+            echo "ZIP corrigido não encontrado."
+            exit 1
+          fi
+          echo "ZIP encontrado: $ZIP"
+          unzip -o "$ZIP" -d android-project
+
+      - name: Compilar APK
+        run: |
+          cd android-project
+          gradle assembleDebug
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RUNDEAFIX-FIRE-CE-RUN-APK-v1.0.1
+          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
